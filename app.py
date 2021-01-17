@@ -1,4 +1,6 @@
 import os
+import boto3
+import psycopg2
 from dotenv import load_dotenv
 from datetime import datetime
 from urllib.request import urlopen
@@ -8,6 +10,7 @@ from google.oauth2 import service_account
 
 load_dotenv()
 
+# Define news sites and headline class.
 SITES = {'tvn24':
          {
              'url': 'https://tvn24.pl',
@@ -19,14 +22,51 @@ SITES = {'tvn24':
              'headline_selector': 'main-module__news-title'}
          }
 
-# If modifying these scopes, delete the file token.pickle.
+# Define Google Spreadsheets const.
+SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SCOPES = ['https://www.googleapis.com/auth/drive',
           'https://www.googleapis.com/auth/spreadsheets']
 
-# The ID and range of a sample spreadsheet.
-SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
+# Define AWS const.
+ENDPOINT = os.getenv('AWS_ENDPOINT')
+USR = os.getenv('AWS_USER')
+REGION = os.getenv('AWS_REGION')
+PORT = "5432"
+DBNAME = "newssites"
 
-WORKDIR = os.getenv('WORKDIR')
+# gets the credentials from .aws/credentials
+session = boto3.Session(profile_name='default')
+client = boto3.client('rds')
+
+
+# Generates AWS RDS token.
+def get_db_token():
+    t = client.generate_db_auth_token(
+        DBHostname=ENDPOINT,
+        Port=PORT,
+        DBUsername=USR,
+        Region=REGION)
+    return t
+
+
+def append_db(site, headline, timestamp):
+    try:
+        conn = psycopg2.connect(
+            host=ENDPOINT,
+            port=PORT,
+            database=DBNAME,
+            user=USR,
+            password=get_db_token())
+        cursor = conn.cursor()
+        cursor.execute(f"""
+            INSERT INTO {site} (headline, time_stamp)
+            VALUES ('{headline}', '{timestamp}');""")
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print("Can't connect. Invalid dbname, user or password?")
+        print(e)
 
 
 def append_spreadsheet(service, range_name, values):
@@ -55,7 +95,7 @@ def scrape_headline(url, selector):
 
 def login_to_google_sheets():
     creds = service_account.Credentials.from_service_account_file(
-        f'{WORKDIR}creds.json', scopes=SCOPES)
+        f'{os.getcwd()}/creds.json', scopes=SCOPES)
 
     service = build('sheets', 'v4', credentials=creds)
     sheet = service.spreadsheets()
@@ -63,7 +103,8 @@ def login_to_google_sheets():
 
 
 def main():
-    time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    time_format = "%m/%d/%Y, %H:%M:%S"
+    time = datetime.now().strftime(time_format)
     print(f'\n{time}')
     service, sheet = login_to_google_sheets()
     for site in SITES.keys():
@@ -85,6 +126,10 @@ def main():
             print("Headline didn't change.")
             continue
         append_spreadsheet(service, range_name, values)
+        # Adjust formatting for DB:
+        site = site.replace('.', '')  # db names have no special signs
+        db_time = datetime.strptime(time, time_format)
+        append_db(site, headline, db_time)
     return True
 
 
