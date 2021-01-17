@@ -1,5 +1,6 @@
 import os
 import boto3
+import pathlib
 import psycopg2
 from dotenv import load_dotenv
 from datetime import datetime
@@ -95,7 +96,8 @@ def scrape_headline(url, selector):
 
 def login_to_google_sheets():
     creds = service_account.Credentials.from_service_account_file(
-        f'{os.getcwd()}/creds.json', scopes=SCOPES)
+        f'{pathlib.Path(__file__).parent.absolute()}/creds.json',
+        scopes=SCOPES)
 
     service = build('sheets', 'v4', credentials=creds)
     sheet = service.spreadsheets()
