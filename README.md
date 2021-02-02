@@ -1,7 +1,7 @@
 I've created this script to gather main headlines from news sites for further analysis.
 ---
 The app scraps headlines and appends AWS postgres db and google spreadsheet with data.
-Because of this there are few things needed before you can use this script.
+Because of this there are few things needed before you can use this script on your own.
 
 Set env variable for:
 - `SPREADSHEET_ID` - with ID of your google spreadsheet
@@ -18,3 +18,6 @@ You can run `setup_cronjob.sh` which will add a cronjob to your crontab and run 
 To remain logged in to Google, you need to generate service account credentials [here](https://console.developers.google.com/apis/api/sheets.googleapis.com/credentials) and put the `creds.json` in working directory.
 
 Remember to add your service account email as an editor in your spreadsheet.
+
+---
+Dataset gathered with this script is accessible via Google Spreadsheets [here](https://docs.google.com/spreadsheets/d/1C1n14n6RNVOhDMCaLGH6QfBB6PFbCkFYqnS-1qt1PkU/).
