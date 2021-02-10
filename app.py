@@ -83,7 +83,11 @@ def append_spreadsheet(service, range_name, values):
 
 def scrape_headline(url, selector):
     # opening up connection, grabbing the page
-    client = urlopen(url)
+    try:
+        client = urlopen(url)
+    except Exception as e:
+        print(e)
+        return
     page_html = client.read()
     client.close()
 
@@ -116,6 +120,11 @@ def main():
             SITES[site]['url'],
             SITES[site]['headline_selector']
         )
+
+        # If headline is blank, eg. because of HTTP error
+        # skip this site and continue with next one.
+        if not headline:
+            continue
 
         result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
                                     range=range_name).execute()
