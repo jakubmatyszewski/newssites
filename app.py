@@ -32,8 +32,8 @@ SCOPES = ['https://www.googleapis.com/auth/drive',
 ENDPOINT = os.getenv('AWS_ENDPOINT')
 USR = os.getenv('AWS_USER')
 REGION = os.getenv('AWS_REGION')
+DBNAME = os.getenv('AWS_DBNAME')
 PORT = "5432"
-DBNAME = "newssites"
 
 # gets the credentials from .aws/credentials
 session = boto3.Session(profile_name='default')
@@ -60,8 +60,8 @@ def append_db(site, headline, timestamp):
             password=get_db_token())
         cursor = conn.cursor()
         cursor.execute(f"""
-            INSERT INTO {site} (headline, time_stamp)
-            VALUES ('{headline}', '{timestamp}');""")
+            INSERT INTO headlines (headline, time_stamp, site)
+            VALUES ('{headline}', '{timestamp}', '{site}');""")
         conn.commit()
         cursor.close()
         conn.close()
